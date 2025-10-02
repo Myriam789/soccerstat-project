@@ -21,5 +21,4 @@ df_cleaned.reset_index(drop=True, inplace=True)
 
 df_cleaned.to_csv('top5-players_CLEANED.csv', index=False)
 
-print("\nData cleaning complete! The cleaned file 'top5-players_CLEANED.csv' is ready.")
-print("Proceed to **Step 2: Importation des données** (Load into Tableau).")
+print("\n'top5-players_CLEANED.csv' créé.")

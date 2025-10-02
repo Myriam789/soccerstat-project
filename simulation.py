@@ -1,201 +1,244 @@
-# streamlit_app_final_clean.py - The Clean Presentation Version
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
-# --- 0. CONFIGURATION & MAPPING ---
+st.set_page_config(layout="wide", page_title="SoccerStat", initial_sidebar_state="collapsed")
 
-st.set_page_config(layout="wide", page_title="SoccerStat Pro Final Analysis", initial_sidebar_state="expanded")
-
-# Define clear, full names for every column abbreviation
-DISPLAY_NAMES = {
-    'Gls_Per_Match': 'Goals per Match',
-    'Ast_Per_Match': 'Assists per Match',
-    'Min': 'Minutes Played',
-    'Gls': 'Total Goals',
-    'Ast': 'Total Assists',
-    'Comp': 'League',
-    'Pos': 'Position',
-    'MP': 'Matches Played',
-    'xG': 'Expected Goals (xG)',
-    'xAG': 'Expected Assisted Goals (xAG)',
-    'PrgP': 'Progressive Passes',
-    'PrgC': 'Progressive Carries',
-}
-
-# Mapping for clarity in the Position Chart
-POSITION_MAP = {
-    'DF': 'Defender', 'MF': 'Midfielder', 'FW': 'Forward', 'GK': 'Goalkeeper',
-    'DF,MF': 'Def/Mid Hybrid', 'MF,FW': 'Mid/For Hybrid', 'MF,DF': 'Mid/Def Hybrid',
-    'FW,MF': 'For/Mid Hybrid', 'DF,FW': 'Def/For Hybrid', 'FW,DF': 'For/Def Hybrid',
-    'Unknown': 'Unknown'
-}
-
-# --- 1. DATA LOADING & CLEANUP ---
-
-@st.cache_data
-def load_and_clean_data(player_file, league_file):
-    try:
-        # Load the base player file and league data
-        df = pd.read_csv(player_file) 
-        df_league_comp = pd.read_csv(league_file)
-    except FileNotFoundError:
-        st.error("Error: Data files not found. Ensure 'top5-players_DASHBOARD_READY.csv' and 'league_comparison_data.csv' are in the same folder.")
-        st.stop()
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    # RENAME ALL PLAYER COLUMNS
-    df.rename(columns=DISPLAY_NAMES, inplace=True)
-    df['Player'] = df['Player'].astype(str).str.strip()
+    * {
+        font-family: 'Inter', sans-serif;
+    }
     
-    # CREATE CLEAR POSITION AND LEAGUE COLUMNS
-    df['Position_Clear'] = df['Position'].apply(lambda x: POSITION_MAP.get(x, x))
-    df['League'] = df['League'].replace({
-        'eng Premier League': 'Premier League', 'de Bundesliga': 'Bundesliga', 
-        'es La Liga': 'La Liga', 'it Serie A': 'Serie A', 'fr Ligue 1': 'Ligue 1'
-    })
-
-    # RENAME LEAGUE COMPARISON DATA
-    df_league_comp.rename(columns={'Comp': 'League', 'Gls': 'Total Goals', 'Ast': 'Total Assists', 'Min': 'Total Minutes'}, inplace=True)
-    df_league_comp['League'] = df_league_comp['League'].replace({
-        'eng Premier League': 'Premier League', 'de Bundesliga': 'Bundesliga', 
-        'es La Liga': 'La Liga', 'it Serie A': 'Serie A', 'fr Ligue 1': 'Ligue 1'
-    })
+    .stApp {
+        background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
+    }
     
-    return df, df_league_comp
+    .main-container {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 1rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .hero-section {
+        text-align: center;
+        padding: 3rem 0;
+        background: black;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.3rem;
+        opacity: 0.9;
+        margin-top: 0.5rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .section-header {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        margin: 2rem 0 1rem 0;
+        padding: 1rem;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .filter-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    div[data-testid="stMetricValue"] {
+        font-size: 2rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-df, df_league_comp = load_and_clean_data('top5-players_NEW.csv', 'league_comparison_data.csv')
+players_df = pd.read_csv('top5-players_NEW.csv')
 
-# --- 2. HELPER FUNCTIONS ---
+players_df.columns = players_df.columns.str.strip()
 
-def get_best_teams(n=5):
-    return df.groupby('Squad')['Total Goals'].sum().nlargest(n)
+st.markdown("""
+    <div class="hero-section">
+        <h1 class="hero-title">SoccerStat</h1>
+        <p class="hero-subtitle">Advanced Football Analytics Dashboard</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-def get_best_players(metric, n=10):
-    return df.sort_values(by=metric, ascending=False).head(n)
+st.markdown('<div class="filter-box">', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
 
-# --- 3. STREAMLIT LAYOUT ---
+with col1:
+    selected_league = st.selectbox(
+        "League",
+        options=["All"] + sorted(players_df['Comp'].unique().tolist())
+    )
 
-st.title("SoccerStat Pro: Final Project Analysis")
-st.markdown("### Interactive Dashboard for Top 5 European League Performance (2023/2024)")
+with col2:
+    selected_position = st.selectbox(
+        "Position",
+        options=["All"] + sorted(players_df['Pos'].unique().tolist())
+    )
 
-# ---------------------------------------------
-# SIDEBAR: THE RANKING TOOL
-# ---------------------------------------------
+with col3:
+    min_minutes = st.slider("Min Minutes Played", 0, int(players_df['Min'].max()), 0)
 
-st.sidebar.header("Ranking Tool: Find The Best")
-st.sidebar.info("Use this tool to find the highest-performing players and teams based on key metrics.")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Best Player Filter
-st.sidebar.markdown("#### Rank Players")
-metric_options = {
-    'Goals per Match': 'Goals per Match',
-    'Total Goals': 'Total Goals',
-    'Assists per Match': 'Assists per Match',
-    'Expected Goals (xG)': 'Expected Goals (xG)'
-}
-selected_metric_name = st.sidebar.selectbox("Select Ranking Metric:", list(metric_options.keys()))
-selected_metric_column = metric_options[selected_metric_name]
+filtered_df = players_df.copy()
 
-top_players = get_best_players(selected_metric_column, 10)
+if selected_league != "All":
+    filtered_df = filtered_df[filtered_df['Comp'] == selected_league]
 
-st.sidebar.markdown(f"**Top 10 Players by {selected_metric_name}:**")
-st.sidebar.dataframe(
-    top_players[['Player', 'Squad', selected_metric_column]].reset_index(drop=True).style.format({selected_metric_column: '{:.3f}'}),
-    use_container_width=True
-)
+if selected_position != "All":
+    filtered_df = filtered_df[filtered_df['Pos'] == selected_position]
 
-st.sidebar.markdown("---")
+filtered_df = filtered_df[filtered_df['Min'] >= min_minutes]
 
-# Best Team Section
-st.sidebar.markdown(f"#### Top 5 Teams (by Total Goals)")
-best_teams = get_best_teams(5)
-st.sidebar.dataframe(
-    best_teams.reset_index().style.format({'Total Goals': '{:,.0f}'}), 
-    use_container_width=True
-)
+st.markdown('<div class="section-header">Key Statistics</div>', unsafe_allow_html=True)
 
+col1, col2, col3, col4 = st.columns(4)
 
-# ---------------------------------------------
-# MAIN CONTENT: INDIVIDUAL PLAYER DASHBOARD
-# ---------------------------------------------
+with col1:
+    st.markdown('<div class="stat-card">', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-label">Total Players</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-value">{len(filtered_df):,}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.header("1. Individual Player Dashboard")
-st.markdown("Use the search bar to pull up a player's profile and analyze their efficiency and contribution rates.")
+with col2:
+    st.markdown('<div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-label">Total Goals</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-value">{filtered_df["Gls"].sum():,}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-player_name = st.text_input("Search Footballer's Name:", value="Erling Haaland")
+with col3:
+    st.markdown('<div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-label">Total Assists</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-value">{filtered_df["Ast"].sum():,}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col4:
+    st.markdown('<div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-label">Avg xG</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="stat-value">{filtered_df["xG"].mean():.2f}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="section-header">Player Search</div>', unsafe_allow_html=True)
+st.markdown('<div class="filter-box">', unsafe_allow_html=True)
+
+player_name = st.text_input("Search for a player:", placeholder="Enter player name...")
 
 if player_name:
-    player_data = df[df['Player'].str.contains(player_name, case=False, na=False)]
+    player_results = filtered_df[filtered_df['Player'].str.contains(player_name, case=False, na=False)]
     
-    if not player_data.empty:
-        player = player_data.iloc[0]
+    if not player_results.empty:
+        player = player_results.iloc[0]
         
-        # Dashboard Header and Profile Info
-        st.markdown(f"## {player['Player']}")
-        st.markdown(f"#### {player['Squad']} ({player['League']}) | Role: **{player['Position_Clear']}**")
+        st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
+                        padding: 2rem; border-radius: 20px; margin: 1rem 0;">
+                <h2 style="margin: 0; color: #2c3e50;">{player['Player']}</h2>
+                <p style="font-size: 1.2rem; color: #555; margin: 0.5rem 0;">
+                    {player['Squad']} | {player['Comp']} | {player['Pos']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        # --- REQUIRED KEY METRIC CARDS (3 columns) ---
-        st.markdown("---")
-        metric_cols = st.columns(3)
-        
-        metric_cols[0].metric("**Goals per Match**", f"{player['Goals per Match']:.3f}", delta=f"Total: {player['Total Goals']}")
-        metric_cols[1].metric("**Assists per Match**", f"{player['Assists per Match']:.3f}", delta=f"Total: {player['Total Assists']}")
-        metric_cols[2].metric("**Total Time on Field**", f"{player['Minutes Played']:,} mins", delta=f"Matches: {player['Matches Played']:.0f}")
-        
-        st.markdown("---")
-        st.markdown("##### Detailed Season Performance Metrics")
-        
-        # Final, clean stats table
-        stats_cols = ['Matches Played', 'Starts', 'Total Goals', 'Total Assists', 'Expected Goals (xG)', 'Expected Assisted Goals (xAG)', 'Progressive Passes', 'Progressive Carries']
-        
-        stats_df_display = player[stats_cols].to_frame().T
-        
-        st.dataframe(
-            stats_df_display.style
-                .background_gradient(cmap='Greens', subset=['Total Goals', 'Total Assists'])
-                .format({'Matches Played': '{:.0f}', 'Starts': '{:.0f}'}), 
-            use_container_width=True
-        )
-            
+        mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+        mcol1.metric("Goals", f"{player['Gls']:.0f}")
+        mcol2.metric("Assists", f"{player['Ast']:.0f}")
+        mcol3.metric("xG", f"{player['xG']:.2f}")
+        mcol4.metric("Minutes", f"{player['Min']:,.0f}")
     else:
-        st.warning(f"No player found matching '{player_name}'. Please check the spelling.")
+        st.warning("No player found")
 
-# ---------------------------------------------
-# GLOBAL VISUALIZATIONS (General & Comparison)
-# ---------------------------------------------
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="section-header">Top Performers</div>', unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["Goal Scorers", "Assist Leaders", "League Stats"])
+
+with tab1:
+    top_scorers = filtered_df.nlargest(15, 'Gls')[['Player', 'Squad', 'Comp', 'Gls', 'xG']]
+    
+    fig = px.bar(top_scorers, x='Gls', y='Player', orientation='h',
+                 color='Gls', color_continuous_scale='purples',
+                 title='Top 15 Goal Scorers',
+                 labels={'Gls': 'Goals', 'Player': ''})
+    fig.update_layout(height=600, showlegend=False, plot_bgcolor='white')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.dataframe(top_scorers.reset_index(drop=True), use_container_width=True, hide_index=True)
+
+with tab2:
+    top_assists = filtered_df.nlargest(15, 'Ast')[['Player', 'Squad', 'Comp', 'Ast', 'xAG']]
+    
+    fig = px.bar(top_assists, x='Ast', y='Player', orientation='h',
+                 color='Ast', color_continuous_scale='blues',
+                 title='Top 15 Assist Providers',
+                 labels={'Ast': 'Assists', 'Player': ''})
+    fig.update_layout(height=600, showlegend=False, plot_bgcolor='white')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.dataframe(top_assists.reset_index(drop=True), use_container_width=True, hide_index=True)
+
+with tab3:
+    league_stats = filtered_df.groupby('Comp').agg({
+        'Gls': 'sum',
+        'Ast': 'sum',
+        'xG': 'sum',
+        'Player': 'count'
+    }).reset_index()
+    league_stats.columns = ['League', 'Goals', 'Assists', 'xG', 'Players']
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name='Goals', x=league_stats['League'], y=league_stats['Goals'], marker_color='#667eea'))
+    fig.add_trace(go.Bar(name='Assists', x=league_stats['League'], y=league_stats['Assists'], marker_color="#4ba279"))
+    fig.update_layout(title='League Comparison', barmode='group', height=500, plot_bgcolor='white')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.dataframe(league_stats, use_container_width=True, hide_index=True)
 
 st.markdown("---")
-st.header("2. Global Visualization & League Comparison")
-st.markdown("These charts illustrate the overall composition of the dataset and the raw productivity of the five leagues.")
-
-chart_col1, chart_col2, chart_col3 = st.columns(3)
-
-# Chart 1: Players by Position (General Visualization)
-with chart_col1:
-    st.subheader("Player Distribution by Position")
-    pos_counts = df['Position_Clear'].value_counts().reset_index()
-    pos_counts.columns = ['Position', 'Count']
-    st.bar_chart(pos_counts.set_index('Position'))
-    st.caption("Count of all players who met the minimum playing time requirement, categorized by their primary role.")
-
-# Chart 2: Players by Nation (General Visualization)
-with chart_col2:
-    st.subheader("Player Count by Nation")
-    nation_counts = df['Nation'].value_counts().head(10).reset_index()
-    nation_counts.columns = ['Nation', 'Count']
-    st.bar_chart(nation_counts.set_index('Nation'))
-    st.caption("The top 10 countries supplying players to the five leagues.")
-
-# Chart 3: League Comparison (Comparison of Performances)
-with chart_col3:
-    st.subheader("Total League Productivity")
-    df_comp = df_league_comp.set_index('League')
-    
-    # Normalize data for single chart comparison (explaining the 'Normalized Total Volume' concept)
-    df_comp_normalized = df_comp[['Total Goals', 'Total Assists', 'Total Minutes']].copy()
-    df_comp_normalized['Total Goals'] = df_comp_normalized['Total Goals'] / df_comp_normalized['Total Goals'].max()
-    df_comp_normalized['Total Assists'] = df_comp_normalized['Total Assists'] / df_comp_normalized['Total Assists'].max()
-    df_comp_normalized['Total Minutes'] = df_comp_normalized['Total Minutes'] / df_comp_normalized['Total Minutes'].max()
-    
-    st.bar_chart(df_comp_normalized, use_container_width=True)
-    st.caption("Compares total Goals, Assists, and Minutes. Data is scaled (normalized) so the highest-performing league hits 100% in each metric.")
