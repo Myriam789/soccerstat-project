@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-ACCENT_COLOR = '#8B5CF6' 
+ACCENT_COLOR = "#FFF822" 
 GREY_DARK = '#1a1a1a' 
 VIBRANT_COLOR_SCALE = px.colors.sequential.Sunsetdark 
 
@@ -14,18 +14,18 @@ def apply_custom_styles():
         <style>
 
         .stApp {{
-            background-color: {GREY_DARK}; /* Solid dark background */
+            background-color: {GREY_DARK}; 
             color: #ffffff; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }}
 
         .main .block-container {{
-            background-color: rgba(0, 0, 0, 0.7); /* Deep black, slight transparency */
+            background-color: rgba(0, 0, 0, 0.7); 
             border-radius: 20px;
             padding: 3rem 4rem; 
             margin-top: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 8px {ACCENT_COLOR}; /* Simpler shadow effect */
-            border: 1px solid rgba(139, 92, 246, 0.2); /* Subtle accent border */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 8px {ACCENT_COLOR}; 
+            border: 1px solid rgba(139, 92, 246, 0.2); 
         }}
 
         [data-testid="stSidebar"] {{
@@ -102,8 +102,6 @@ players_df['Gls/90'] = players_df.apply(lambda row: (row['Gls'] / row['Min']) * 
 players_df['Ast/90'] = players_df.apply(lambda row: (row['Ast'] / row['Min']) * 90 if row['Min'] > 0 else 0, axis=1)
 
 st.title("SoccerStat | Elite Performance Dashboard")
-st.subheader("Deep Dive into the World's Top Football Leagues (2023/2024)")
-
 st.markdown("---")
 
 st.header("Analyze & Filter")
@@ -136,7 +134,7 @@ if selected_position != "All":
 filtered_df = filtered_df[filtered_df['Min'] >= min_minutes]
 
 if filtered_df.empty:
-    st.error("No players match the current filter criteria. Try reducing the minimum minutes played.")
+    st.error("No players match the filter criteria. Try reducing the minimum minutes played.")
     st.stop()
 
 st.markdown("---")
@@ -165,9 +163,7 @@ st.header("Analysis & Visualization")
 tab1, tab2, tab3, tab4 = st.tabs(["General Overview", "Individual Player Profile", "Goals & Expected Goals", "League Performance"]) 
 
 with tab1:
-    st.subheader("Global Player Distribution (Big and Readable)")
-    
-    st.markdown("### Player Count by Primary Position")
+    st.subheader("Global Player Distribution")
     position_counts = filtered_df['Pos'].str.split(',').str[0].value_counts().reset_index()
     position_counts.columns = ['Position', 'Count']
     
@@ -387,7 +383,7 @@ with tab4:
         orientation='h',
         color='Min',
         color_continuous_scale='Mint',
-        title='Total Minutes Played (Experience) by League',
+        title='Total Minutes Played by League',
         labels={'Min': 'Total Minutes', 'Comp': 'League'}
     )
     fig_min.update_layout(
