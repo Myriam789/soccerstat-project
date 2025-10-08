@@ -3,9 +3,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-ACCENT_COLOR = "#FFF822" 
-GREY_DARK = '#1a1a1a' 
-VIBRANT_COLOR_SCALE = px.colors.sequential.Sunsetdark 
+ACCENT_COLOR = "#00FFFF"      
+GREY_DARK = "#0D1117"          
+SECONDARY_ACCENT = "#FF4B4B"    
+ORANGE_ACCENT = "#FF9900"       
+VIBRANT_COLOR_SCALE = px.colors.sequential.Viridis 
 
 def apply_custom_styles():
     st.markdown(
@@ -24,7 +26,7 @@ def apply_custom_styles():
             padding: 3rem 4rem; 
             margin-top: 2rem;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 8px {ACCENT_COLOR}; 
-            border: 1px solid rgba(139, 92, 246, 0.2); 
+            border: 1px solid rgba(0, 255, 255, 0.2); 
         }}
 
         [data-testid="stSidebar"] {{
@@ -50,7 +52,7 @@ def apply_custom_styles():
             color: {ACCENT_COLOR} !important; 
             font-size: 3rem;
             font-weight: bold;
-            text-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
         }}
         
         [data-testid="stMetricLabel"] {{
@@ -100,7 +102,7 @@ players_df.columns = players_df.columns.str.strip()
 players_df['Gls/90'] = players_df.apply(lambda row: (row['Gls'] / row['Min']) * 90 if row['Min'] > 0 else 0, axis=1)
 players_df['Ast/90'] = players_df.apply(lambda row: (row['Ast'] / row['Min']) * 90 if row['Min'] > 0 else 0, axis=1)
 
-st.title("SoccerStat | Elite Performance Dashboard")
+st.title("SoccerStat Dashboard")
 st.markdown("---")
 
 st.header("Analyze & Filter")
@@ -128,7 +130,6 @@ if selected_league != "All":
     filtered_df = filtered_df[filtered_df['Comp'] == selected_league]
 
 if selected_position != "All":
-    
     filtered_df = filtered_df[filtered_df['Pos'].apply(lambda x: selected_position in x.split(','))]
 
 filtered_df = filtered_df[filtered_df['Min'] >= min_minutes]
@@ -191,32 +192,18 @@ with tab1:
     st.markdown("---")
     
     st.markdown("### Player Distribution by Nation")
+    nation_counts = filtered_df['Nation'].value_counts().reset_index()
+    nation_counts.columns = ['Nation', 'Count']
     
-    nation_counts = filtered_df['Nation'].value_counts()
-    total_players = nation_counts.sum()
-    
-   
-    NATION_PERCENT_THRESHOLD = 0.05
-    
-    large_nations_counts = nation_counts[nation_counts / total_players >= NATION_PERCENT_THRESHOLD]
-    
-    other_count = nation_counts[nation_counts / total_players < NATION_PERCENT_THRESHOLD].sum()
-    
-    nation_df = large_nations_counts.reset_index()
-    nation_df.columns = ['Nation', 'Count']
-    
-    if other_count > 0:
-        nation_df.loc[len(nation_df)] = ['Other', other_count]
-
     fig_nation = px.pie(
-        nation_df,
+        nation_counts,
         values='Count',
         names='Nation',
-        title=f'Distribution of Players by Nation (Nations < {int(NATION_PERCENT_THRESHOLD*100)}% Grouped)',
+        title='Distribution of Players by Nation ',
         hole=0.4, 
-        color_discrete_sequence=px.colors.qualitative.Pastel 
+        color_discrete_sequence=px.colors.qualitative.Plotly 
     )
-   
+    
     fig_nation.update_traces(
         textposition='inside', 
         textinfo='percent+label', 
@@ -249,19 +236,19 @@ with tab2:
         with col_info:
             st.write(f"**Position:** {player['Pos']}")
             st.write(f"**Nation:** {player['Nation']}")
-            st.write(f"**Minutes Played (Experience):** {player['Min']:.0f}")
+            st.write(f"**Minutes Played:** {player['Min']:.0f}")
             
             st.markdown("#### Performance Per 90 Minutes")
             st.metric("Goals / 90 Mins", f"{player['Gls/90']:.2f}", help="Equivalent to 'Nombre de buts par match'")
             st.metric("Assists / 90 Mins", f"{player['Ast/90']:.2f}", help="Equivalent to 'Nombre d'assists par match'")
             
             st.markdown("#### Raw Performance")
-            st.metric("Total Goals (Gls)", f"{player['Gls']:.0f}")
-            st.metric("Total Assists (Ast)", f"{player['Ast']:.0f}")
+            st.metric("Total Goals ", f"{player['Gls']:.0f}")
+            st.metric("Total Assists ", f"{player['Ast']:.0f}")
 
         with col_chart:
             stats_cols = ['Gls', 'Ast', 'xG', 'xAG']
-            display_stats = ['Goals (Gls)', 'Assists (Ast)', 'Expected Goals (Exp Gls)', 'Expected Assists (Exp Ast)']
+            display_stats = ['Goals ', 'Assists ', 'Expected Goals ', 'Expected Assists']
             
             group_avg = filtered_df[stats_cols].mean().to_dict()
 
@@ -287,8 +274,8 @@ with tab2:
                 y=comparison_df['Group Average'],
                 mode='markers+lines',
                 name='Group Average',
-                marker=dict(size=10, color='red', symbol='circle'),
-                line=dict(width=2, color='red', dash='dash')
+                marker=dict(size=10, color=SECONDARY_ACCENT, symbol='circle'),
+                line=dict(width=2, color=SECONDARY_ACCENT, dash='dash')
             ))
 
             fig.update_layout(
@@ -311,6 +298,7 @@ with tab3:
  
     comparison_df.rename(columns={'xG': 'Exp Gls'}, inplace=True)
     
+    
     melted_df = comparison_df.melt(
         id_vars='Player', 
         value_vars=['Gls', 'Exp Gls'],
@@ -326,11 +314,11 @@ with tab3:
         orientation='h',
         barmode='group',
         color_discrete_map={
-            'Gls': ACCENT_COLOR, 
-            'Exp Gls': '#FF8C00'     
+            'Gls': ACCENT_COLOR,       
+            'Exp Gls': ORANGE_ACCENT   
         },
         hover_data=['Player', 'Metric', 'Value'],
-        title='Actual Goals (Gls) vs. Expected Goals (Exp Gls) (Top 15 Scorers)',
+        title='Actual Goals vs. Expected Goals (Top 15 Scorers)',
         labels={'Value': 'Goals/Expected Goals', 'Player': ''}
     )
 
@@ -366,14 +354,14 @@ with tab4:
             y=league_performance['Comp'],
             x=league_performance['Gls'],
             orientation='h',
-            marker_color=ACCENT_COLOR
+            marker_color=ACCENT_COLOR 
         ),
         go.Bar(
             name='Total Assists',
             y=league_performance['Comp'],
             x=league_performance['Ast'],
             orientation='h',
-            marker_color='#FF8C00'
+            marker_color=ORANGE_ACCENT 
         )
     ])
     
@@ -396,7 +384,7 @@ with tab4:
         y='Comp',
         orientation='h',
         color='Min',
-        color_continuous_scale='Mint',
+        color_continuous_scale=VIBRANT_COLOR_SCALE,
         title='Total Minutes Played by League',
         labels={'Min': 'Total Minutes', 'Comp': 'League'}
     )
@@ -409,8 +397,6 @@ with tab4:
         yaxis={'categoryorder': 'total ascending'}
     )
     st.plotly_chart(fig_min, use_container_width=True)
-
-
 
 st.markdown(
     """
