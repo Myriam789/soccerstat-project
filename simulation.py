@@ -3,11 +3,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-ACCENT_COLOR = "#00FFFF"      
-GREY_DARK = "#0D1117"          
-SECONDARY_ACCENT = "#FF4B4B"    
-ORANGE_ACCENT = "#FF9900"       
-VIBRANT_COLOR_SCALE = px.colors.sequential.Viridis 
+
+BACKGROUND_DARK = "#0D1321"     
+CARD_DARK = "#1D2A3A"           
+ACCENT_PRIMARY = "#00C9A7"      
+ACCENT_SECONDARY = "#B0C4DE"    
+ACCENT_TERTIARY = "#FF9F1C"     
+TEXT_COLOR = "#F0F4F8"         
+COLOR_SCALE_SEQ = "mint"        
 
 def apply_custom_styles():
     st.markdown(
@@ -15,48 +18,48 @@ def apply_custom_styles():
         <style>
 
         .stApp {{
-            background-color: {GREY_DARK}; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: {BACKGROUND_DARK}; 
+            color: {TEXT_COLOR}; 
+            font-family: 'Inter', sans-serif;
         }}
 
         .main .block-container {{
-            background-color: rgba(0, 0, 0, 0.7); 
+            background-color: {CARD_DARK}; 
             border-radius: 20px;
             padding: 3rem 4rem; 
             margin-top: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 8px {ACCENT_COLOR}; 
-            border: 1px solid rgba(0, 255, 255, 0.2); 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7), 0 0 8px {ACCENT_PRIMARY}; 
+            border: 1px solid rgba(0, 201, 167, 0.4); 
         }}
 
         [data-testid="stSidebar"] {{
-            background-color: rgba(10, 10, 10, 0.95); 
-            border-right: 4px solid {ACCENT_COLOR};
+            background-color: #070B14;
+            border-right: 4px solid {ACCENT_PRIMARY};
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
         }}
 
         h1 {{
-            color: {ACCENT_COLOR};
-            text-shadow: 0 0 5px {ACCENT_COLOR}, 0 0 10px rgba(255, 255, 255, 0.2); 
+            color: {ACCENT_PRIMARY};
+            text-shadow: 0 0 5px rgba(0, 201, 167, 0.3), 0 0 10px rgba(255, 255, 255, 0.1); 
             font-size: 3.5rem;
             letter-spacing: 1px;
             font-weight: 900;
         }}
         
         h2, h3, h4 {{
-             color: #ffffff;
+             color: {TEXT_COLOR};
              text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
         }}
 
         [data-testid="stMetricValue"] {{
-            color: {ACCENT_COLOR} !important; 
+            color: {ACCENT_PRIMARY} !important; 
             font-size: 3rem;
             font-weight: bold;
-            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+            text-shadow: 0 0 5px rgba(0, 201, 167, 0.5);
         }}
         
         [data-testid="stMetricLabel"] {{
-            color: #ccc;
+            color: {ACCENT_SECONDARY}; 
             font-size: 1rem;
         }}
 
@@ -64,6 +67,16 @@ def apply_custom_styles():
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
             border: none;
+        }}
+        
+        
+        .stDataFrame table {{
+            background-color: {CARD_DARK};
+            color: {TEXT_COLOR};
+        }}
+        .stDataFrame th {{
+            background-color: #2D3A4A; 
+            color: {ACCENT_PRIMARY};
         }}
         </style>
         """,
@@ -174,7 +187,7 @@ with tab1:
         y='Position',
         orientation='h',
         color='Count',
-        color_continuous_scale=VIBRANT_COLOR_SCALE,
+        color_continuous_scale=COLOR_SCALE_SEQ,
         title='Count of Players by Primary Position',
         labels={'Count': 'Number of Players', 'Position': ''}
     )
@@ -184,7 +197,7 @@ with tab1:
         showlegend=False, 
         plot_bgcolor='rgba(0,0,0,0.5)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color=TEXT_COLOR,
         yaxis={'categoryorder':'total ascending'}
     )
     st.plotly_chart(fig_pos, use_container_width=True)
@@ -192,6 +205,7 @@ with tab1:
     st.markdown("---")
     
     st.markdown("### Player Distribution by Nation")
+    
     nation_counts = filtered_df['Nation'].value_counts().reset_index()
     nation_counts.columns = ['Nation', 'Count']
     
@@ -199,9 +213,9 @@ with tab1:
         nation_counts,
         values='Count',
         names='Nation',
-        title='Distribution of Players by Nation ',
+        title='Distribution of Players by Nation',
         hole=0.4, 
-        color_discrete_sequence=px.colors.qualitative.Plotly 
+        color_discrete_sequence=px.colors.qualitative.D3
     )
     
     fig_nation.update_traces(
@@ -214,7 +228,7 @@ with tab1:
         height=650,
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color=TEXT_COLOR,
         margin=dict(t=50, b=0, l=0, r=0),
         legend=dict(font=dict(size=12))
     )
@@ -248,7 +262,7 @@ with tab2:
 
         with col_chart:
             stats_cols = ['Gls', 'Ast', 'xG', 'xAG']
-            display_stats = ['Goals ', 'Assists ', 'Expected Goals ', 'Expected Assists']
+            display_stats = ['Goals ', 'Assists ', 'Expected Goals ', 'Expected Assists ']
             
             group_avg = filtered_df[stats_cols].mean().to_dict()
 
@@ -265,7 +279,7 @@ with tab2:
                 x=comparison_df['Metric'],
                 y=comparison_df['Player Value'],
                 name=player['Player'] + ' Value',
-                marker_color=ACCENT_COLOR,
+                marker_color=ACCENT_PRIMARY,
                 opacity=0.8
             ))
 
@@ -274,8 +288,8 @@ with tab2:
                 y=comparison_df['Group Average'],
                 mode='markers+lines',
                 name='Group Average',
-                marker=dict(size=10, color=SECONDARY_ACCENT, symbol='circle'),
-                line=dict(width=2, color=SECONDARY_ACCENT, dash='dash')
+                marker=dict(size=10, color=ACCENT_SECONDARY, symbol='circle'),
+                line=dict(width=2, color=ACCENT_SECONDARY, dash='dash')
             ))
 
             fig.update_layout(
@@ -285,7 +299,7 @@ with tab2:
                 barmode='group',
                 plot_bgcolor='rgba(0,0,0,0)', 
                 paper_bgcolor='rgba(0,0,0,0)', 
-                font_color='white',
+                font_color=TEXT_COLOR,
                 margin=dict(l=50, r=50, t=50, b=50),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
@@ -297,7 +311,6 @@ with tab3:
     comparison_df = filtered_df.nlargest(15, 'Gls')[['Player', 'Gls', 'xG']].copy()
  
     comparison_df.rename(columns={'xG': 'Exp Gls'}, inplace=True)
-    
     
     melted_df = comparison_df.melt(
         id_vars='Player', 
@@ -314,11 +327,11 @@ with tab3:
         orientation='h',
         barmode='group',
         color_discrete_map={
-            'Gls': ACCENT_COLOR,       
-            'Exp Gls': ORANGE_ACCENT   
+            'Gls': ACCENT_PRIMARY,     
+            'Exp Gls': ACCENT_TERTIARY  
         },
         hover_data=['Player', 'Metric', 'Value'],
-        title='Actual Goals vs. Expected Goals (Top 15 Scorers)',
+        title='Actual Goals vs. Expected Goals(Top 15 Scorers)',
         labels={'Value': 'Goals/Expected Goals', 'Player': ''}
     )
 
@@ -326,8 +339,8 @@ with tab3:
         height=600,
         plot_bgcolor='rgba(0,0,0,0.5)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
-        xaxis=dict(gridcolor='#374151', zeroline=True, zerolinecolor='white', zerolinewidth=2),
+        font_color=TEXT_COLOR,
+        xaxis=dict(gridcolor='#374151', zeroline=True, zerolinecolor=TEXT_COLOR, zerolinewidth=2),
         yaxis=dict(gridcolor='#374151'),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
@@ -354,14 +367,14 @@ with tab4:
             y=league_performance['Comp'],
             x=league_performance['Gls'],
             orientation='h',
-            marker_color=ACCENT_COLOR 
+            marker_color=ACCENT_PRIMARY 
         ),
         go.Bar(
             name='Total Assists',
             y=league_performance['Comp'],
             x=league_performance['Ast'],
             orientation='h',
-            marker_color=ORANGE_ACCENT 
+            marker_color=ACCENT_TERTIARY 
         )
     ])
     
@@ -373,7 +386,7 @@ with tab4:
         height=500,
         plot_bgcolor='rgba(0,0,0,0.5)', 
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color=TEXT_COLOR,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(fig_ga, use_container_width=True)
@@ -384,7 +397,7 @@ with tab4:
         y='Comp',
         orientation='h',
         color='Min',
-        color_continuous_scale=VIBRANT_COLOR_SCALE,
+        color_continuous_scale=COLOR_SCALE_SEQ,
         title='Total Minutes Played by League',
         labels={'Min': 'Total Minutes', 'Comp': 'League'}
     )
@@ -393,14 +406,16 @@ with tab4:
         showlegend=False,
         plot_bgcolor='rgba(0,0,0,0.5)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color=TEXT_COLOR,
         yaxis={'categoryorder': 'total ascending'}
     )
     st.plotly_chart(fig_min, use_container_width=True)
 
+
+
 st.markdown(
-    """
-    <div style='text-align: center; margin-top: 5rem; color: #999; font-size: 0.9rem;'>
+    f"""
+    <div style='text-align: center; margin-top: 5rem; color: {ACCENT_PRIMARY}; font-size: 0.9rem;'>
         Dashboard created by Sarah , Rosa and Myriam
     </div>
     """,
