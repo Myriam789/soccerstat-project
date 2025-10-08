@@ -7,7 +7,6 @@ ACCENT_COLOR = "#FFF822"
 GREY_DARK = '#1a1a1a' 
 VIBRANT_COLOR_SCALE = px.colors.sequential.Sunsetdark 
 
-
 def apply_custom_styles():
     st.markdown(
         f"""
@@ -81,7 +80,7 @@ try:
     players_df = pd.read_csv('top5-players_NEW.csv')
     
 except FileNotFoundError:
-   
+    
     st.warning("Data file 'top5-players_NEW.csv' not found. Displaying mock data with professional design.")
     players_df = pd.DataFrame({
         'Player': ['Haaland', 'Mbappe', 'Messi', 'De Bruyne', 'Van Dijk', 'Odegaard', 'Vini Jr', 'Saka', 'Musiala', 'Kvaratskhelia', 'Griezmann', 'Kane', 'Salah', 'Foden', 'Rodri'],
@@ -129,7 +128,8 @@ if selected_league != "All":
     filtered_df = filtered_df[filtered_df['Comp'] == selected_league]
 
 if selected_position != "All":
-    filtered_df = filtered_df[filtered_df['Pos'].str.contains(selected_position, case=False, na=False)]
+    
+    filtered_df = filtered_df[filtered_df['Pos'].apply(lambda x: selected_position in x.split(','))]
 
 filtered_df = filtered_df[filtered_df['Min'] >= min_minutes]
 
@@ -174,7 +174,7 @@ with tab1:
         orientation='h',
         color='Count',
         color_continuous_scale=VIBRANT_COLOR_SCALE,
-        title='Count of Players by Position',
+        title='Count of Players by Primary Position',
         labels={'Count': 'Number of Players', 'Position': ''}
     )
     
@@ -191,18 +191,32 @@ with tab1:
     st.markdown("---")
     
     st.markdown("### Player Distribution by Nation")
-    nation_counts = filtered_df['Nation'].value_counts().reset_index()
-    nation_counts.columns = ['Nation', 'Count']
     
+    nation_counts = filtered_df['Nation'].value_counts()
+    total_players = nation_counts.sum()
+    
+   
+    NATION_PERCENT_THRESHOLD = 0.05
+    
+    large_nations_counts = nation_counts[nation_counts / total_players >= NATION_PERCENT_THRESHOLD]
+    
+    other_count = nation_counts[nation_counts / total_players < NATION_PERCENT_THRESHOLD].sum()
+    
+    nation_df = large_nations_counts.reset_index()
+    nation_df.columns = ['Nation', 'Count']
+    
+    if other_count > 0:
+        nation_df.loc[len(nation_df)] = ['Other', other_count]
+
     fig_nation = px.pie(
-        nation_counts,
+        nation_df,
         values='Count',
         names='Nation',
-        title='Distribution of Players by Nation',
+        title=f'Distribution of Players by Nation (Nations < {int(NATION_PERCENT_THRESHOLD*100)}% Grouped)',
         hole=0.4, 
         color_discrete_sequence=px.colors.qualitative.Pastel 
     )
-    
+   
     fig_nation.update_traces(
         textposition='inside', 
         textinfo='percent+label', 
@@ -294,7 +308,7 @@ with tab3:
     st.subheader("Scoring Efficiency: Actual vs. Expected Goals")
     
     comparison_df = filtered_df.nlargest(15, 'Gls')[['Player', 'Gls', 'xG']].copy()
-  
+ 
     comparison_df.rename(columns={'xG': 'Exp Gls'}, inplace=True)
     
     melted_df = comparison_df.melt(
@@ -316,7 +330,7 @@ with tab3:
             'Exp Gls': '#FF8C00'     
         },
         hover_data=['Player', 'Metric', 'Value'],
-        title='Actual Goals (Gls) vs. Expected Goals (Exp Gls) by Player',
+        title='Actual Goals (Gls) vs. Expected Goals (Exp Gls) (Top 15 Scorers)',
         labels={'Value': 'Goals/Expected Goals', 'Player': ''}
     )
 
