@@ -24,7 +24,7 @@ Python 3.8+ pip (Python package installer)
 
 Installation Clone the Repository:
 
-git clone https://github.com/[YOUR-USERNAME]/SoccerStat-Dashboard.git cd SoccerStat-Dashboard
+git clone https://github.com/[Myriam789/soccerStat-project.git cd SoccerStat-Dashboard
 
 Install Dependencies:
 
